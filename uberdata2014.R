@@ -1,0 +1,205 @@
+                          ####### ABHINAND BERWAL #######
+
+
+library(lubridate)          # lubridate use for date and time
+library(ggplot2)            # Use ggplot for visualization
+library(ggthemes)           # use ggthemes for better & extra themes
+library(dplyr)              # use dplyr for data manipulation
+library(tidyr)              # use tidyr for tidy data
+library(DT)                 # use for data tables
+library(scales)             # use for automatically map the data to the correct scales
+
+# Reading the chunk data
+
+apr_data <- read.csv("uber-raw-data-apr14.csv",stringsAsFactors = TRUE)
+may_data <- read.csv("uber-raw-data-may14.csv",stringsAsFactors = TRUE)
+jun_data <- read.csv("uber-raw-data-jun14.csv",stringsAsFactors = TRUE)
+jul_data <- read.csv("uber-raw-data-jul14.csv",stringsAsFactors = TRUE)
+aug_data <- read.csv("uber-raw-data-aug14.csv",stringsAsFactors = TRUE)
+sep_data <- read.csv("uber-raw-data-sep14.csv",stringsAsFactors = TRUE)
+# 6 month of data
+
+# Use rbind() function combines data frame by rows
+
+# Combine all of this data into a single dataframe called 'data_2014'.
+
+data_2014=rbind(apr_data,may_data,jun_data,jul_data,aug_data,sep_data)
+
+View(data_2014)
+
+# visulize the data 
+
+head(data_2014)
+
+# Structhure 
+
+str(data_2014)
+
+# Summary statistics 
+
+summary(data_2014)
+
+# Start analysis
+
+# Use as.POSIXct representing calendar dates and times.
+
+data_2014$Date.Time=as.POSIXct(data_2014$Date.Time,format = "%m/%d/%Y %H:%M:%S")
+
+#use lubridate library
+
+data_2014$Date.Time= ymd_hms(data_2014$Date.Time)                      # formatting
+
+data_2014$day=factor(day(data_2014$Date.Time))                         # day
+
+data_2014$month=factor(month(data_2014$Date.Time, label=TRUE))         # month
+
+data_2014$year=factor(year(data_2014$Date.Time))                       # year
+
+data_2014$dayofweek=factor(wday(data_2014$Date.Time, label=TRUE))      # dayofweek
+
+data_2014$hour=factor(hour(data_2014$Date.Time))                       # Hour
+
+data_2014$minute=factor(minute(data_2014$Date.Time))                   # Minute
+
+data_2014$second=factor(second(data_2014$Date.Time))                   # Second
+
+
+# Let's start visualization 
+
+# use the ggplot function to plot the number of trips that the passengers had made in a day
+
+# use dplyr to aggregate our data
+
+# plotting the trip by hours in a day
+
+# Uber Trips made Every Hour in New York City
+
+hour_data <- data_2014 %>%
+  group_by(hour) %>%
+  dplyr::summarize(Total = n()) 
+
+# See in a tabular
+datatable(hour_data)
+
+# visualize the data
+
+ggplot(hour_data,aes(hour,Total)) +
+  geom_bar(stat = "identity" ,fill="steelblue",color="red")+
+  ggtitle("Trips every hour")+
+  theme(legend.position = "none")+
+  scale_y_continuous(labels=comma)
+
+# Uber Trips made Every Hour in Month
+
+month_hour <- data_2014 %>%
+  group_by(month, hour) %>%
+  dplyr::summarize(Total = n())
+datatable(month_hour)
+
+# visualize the data
+
+ggplot(month_hour, aes(hour, Total, fill = month)) + 
+  geom_bar( stat = "identity") +
+  ggtitle("Trips by Hour and Month") +
+  scale_y_continuous(labels = comma)
+
+
+# Uber Trips made According to The Days in New York City
+weekdays_data<- data_2014 %>%
+  group_by(dayofweek) %>%
+  dplyr::summarize(Total=n())
+datatable(weekdays_data)
+
+ggplot(weekdays_data,aes(dayofweek,Total))+
+  geom_bar(stat = "identity",fill="skyblue",color="green") +
+  ggtitle("trip every week days") +
+  theme(legend.position = "none") +
+  scale_y_continuous(labels = comma)
+
+# Uber trips made every day in month
+weekday_month<- data_2014 %>%
+  group_by(month,dayofweek) %>%
+  dplyr::summarize(Total=n())
+datatable(weekday_month)
+
+ggplot(weekday_month,aes(dayofweek,total,fill=month)) +
+   geom_bar(stat = "identity",fill="red",color="black") +
+   ggtitle("Trip every day in month") +
+   theme(legend.position = "none") +
+   scale_y_continuous(labels = comma)
+
+# Uber Trips According to Different BASE in New York City
+base_data<- data_2014 %>%
+  group_by(Base) %>%
+  dplyr::summarize(total=n())
+datatable(base_data)
+ggplot(base_data,aes(Base,total)) +
+  geom_bar(stat = "identity",fill="blue",color="black") +
+  ggtitle("Trips according to different base") +
+  theme(legend.position = "none") +
+  scale_y_continuous(labels = comma)
+
+# Uber Trips According to Different BASE in Month
+base_month<- data_2014 %>%
+  group_by(Base,month) %>%
+  dplyr::summarize(Trip=n())
+datatable(base_month)
+ggplot(base_month,aes(Base,Trip,fill=month)) +
+  geom_bar(stat = "identity",fill="green",color="black") +
+  ggtitle("Trips according to different base in month") +
+  theme(legend.position = "none") +
+  scale_y_continuous(labels = comma)
+
+
+base_weekday<- data_2014 %>%
+  group_by(Base,dayofweek) %>%
+  dplyr::summarize(Trip=n())
+datatable(base_weekday)
+ggplot(base_weekday,aes(Base,Trip,fill=dayofweek)) +
+  geom_bar(stat = "identity",fill="yellow",color="black") +
+  ggtitle("Trips according to different base in week day") +
+  theme(legend.position = "none") +
+  scale_y_continuous(labels = comma)
+
+
+# Heatmap for Uber Trips by Day & Month
+ggplot(weekday_month, aes(dayofweek,month,fill =total)) +
+  ggtitle("Heatmap of Uber Trips by Days of Months") +
+  geom_tile(color = "white") +
+  scale_fill_gradient(guide = "colourbar", low = "gray87", high = "gray35") + 
+  theme(legend.position = "none")
+
+#Heatmap of Uber Trips by Base and week
+ggplot(base_weekday, aes(Base,dayofweek,fill =Trip)) +
+  ggtitle("Heatmap of Uber Trips by Base and week") +
+  geom_tile(color = "white") +
+  scale_fill_gradient(guide = "colourbar", low = "gray87", high = "gray35") + 
+  theme(legend.position = "none")
+
+#Heatmap of Uber Trips by BASE and Month
+ggplot(base_month, aes(Base, month, fill =Trip)) +
+  ggtitle("Heatmap of Uber Trips by BASE and Month") +
+  geom_tile(color = "white")+
+  scale_fill_gradient(guide = "colourbar", low = "gray87", high = "gray35") + 
+  theme(legend.position = "none")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
